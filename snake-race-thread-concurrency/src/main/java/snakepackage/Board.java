@@ -5,6 +5,7 @@ import java.awt.Graphics;
 import java.awt.Image;
 import java.io.IOException;
 import java.net.URL;
+import java.util.LinkedList;
 import java.util.Observable;
 import java.util.Observer;
 import java.util.Random;
@@ -21,7 +22,7 @@ public class Board extends JLabel implements Observer {
 	public static final int NR_BARRIERS = 5;
 	public static final int NR_JUMP_PADS = 2;
 	public static final int NR_TURBO_BOOSTS = 2;
-	public static final int NR_FOOD = 5;
+	public static final int NR_FOOD = 10;
 	static Cell[] food = new Cell[NR_FOOD];
 	static Cell[] barriers = new Cell[NR_BARRIERS];
 	static Cell[] jump_pads = new Cell[NR_JUMP_PADS];
@@ -29,6 +30,9 @@ public class Board extends JLabel implements Observer {
 	static int[] result = new int[SnakeApp.MAX_THREADS];
 	Random random = new Random();
 	static Cell[][] gameboard = new Cell[GridSize.GRID_WIDTH][GridSize.GRID_HEIGHT];
+	
+    // Uso de un objeto de bloqueo para sincronizar las operaciones
+    private final Object lock = new Object();
 
 	@SuppressWarnings("unused")
 	public Board() {
@@ -43,63 +47,73 @@ public class Board extends JLabel implements Observer {
 	}
 
 	private void GenerateTurboBoosts() {
-		for (int i = 0; i != NR_TURBO_BOOSTS; i++) {
-			Cell tmp = gameboard[random.nextInt(GridSize.GRID_WIDTH)][random
-					.nextInt(GridSize.GRID_HEIGHT)];
-			if (!tmp.hasElements()) {
-				turbo_boosts[i] = tmp;
-				turbo_boosts[i].setTurbo_boost(true);
-			} else {
-				i--;
+		synchronized(lock){
+			for (int i = 0; i != NR_TURBO_BOOSTS; i++) {
+				Cell tmp = gameboard[random.nextInt(GridSize.GRID_WIDTH)][random
+						.nextInt(GridSize.GRID_HEIGHT)];
+				if (!tmp.hasElements()) {
+					turbo_boosts[i] = tmp;
+					turbo_boosts[i].setTurbo_boost(true);
+				} else {
+					i--;
+				}
 			}
 		}
 	}
 
 	private void GenerateJumpPads() {
-		for (int i = 0; i != NR_JUMP_PADS; i++) {
-			Cell tmp = gameboard[random.nextInt(GridSize.GRID_WIDTH)][random
-					.nextInt(GridSize.GRID_HEIGHT)];
-			if (!tmp.hasElements()) {
-				jump_pads[i] = tmp;
-				jump_pads[i].setJump_pad(true);
-			} else {
-				i--;
+		synchronized(lock){
+			for (int i = 0; i != NR_JUMP_PADS; i++) {
+				Cell tmp = gameboard[random.nextInt(GridSize.GRID_WIDTH)][random
+						.nextInt(GridSize.GRID_HEIGHT)];
+				if (!tmp.hasElements()) {
+					jump_pads[i] = tmp;
+					jump_pads[i].setJump_pad(true);
+				} else {
+					i--;
+				}
 			}
 		}
 	}
 
 	private void GenerateBoard() {
-		for (int i = 0; i != GridSize.GRID_WIDTH; i++) {
-			for (int j = 0; j != GridSize.GRID_HEIGHT; j++) {
-				gameboard[i][j] = new Cell(i, j);
-				//System.out.println(" ins " + gameboard[i][j]);
+		synchronized(lock){
+			for (int i = 0; i != GridSize.GRID_WIDTH; i++) {
+				for (int j = 0; j != GridSize.GRID_HEIGHT; j++) {
+					gameboard[i][j] = new Cell(i, j);
+					//System.out.println(" ins " + gameboard[i][j]);
+				}
 			}
 		}
 
 	}
 
 	private void GenerateBarriers() {
-		for (int i = 0; i != NR_BARRIERS; i++) {
-			Cell tmp = gameboard[random.nextInt(GridSize.GRID_WIDTH)][random
-					.nextInt(GridSize.GRID_HEIGHT)];
-			if (!tmp.hasElements()) {
-				barriers[i] = tmp;
-				barriers[i].setBarrier(true);
-			} else {
-				i--;
+		synchronized(lock){
+			for (int i = 0; i != NR_BARRIERS; i++) {
+				Cell tmp = gameboard[random.nextInt(GridSize.GRID_WIDTH)][random
+						.nextInt(GridSize.GRID_HEIGHT)];
+				if (!tmp.hasElements()) {
+					barriers[i] = tmp;
+					barriers[i].setBarrier(true);
+				} else {
+					i--;
+				}
 			}
 		}
 	}
 
 	private void GenerateFood() {
-		for (int i = 0; i != NR_FOOD; i++) {
-			Cell tmp = gameboard[random.nextInt(GridSize.GRID_WIDTH)][random
-					.nextInt(GridSize.GRID_HEIGHT)];
-			if (!tmp.hasElements()) {
-				food[i] = tmp;
-				food[i].setFood(true);
-			} else {
-				i--;
+		synchronized(lock){
+			for (int i = 0; i != NR_FOOD; i++) {
+				Cell tmp = gameboard[random.nextInt(GridSize.GRID_WIDTH)][random
+						.nextInt(GridSize.GRID_HEIGHT)];
+				if (!tmp.hasElements()) {
+					food[i] = tmp;
+					food[i].setFood(true);
+				} else {
+					i--;
+				}
 			}
 		}
 	}
@@ -183,7 +197,8 @@ public class Board extends JLabel implements Observer {
 
 	private void drawSnake(Graphics g) {
 		for (int i = 0; i != SnakeApp.MAX_THREADS; i++) {
-			for (Cell p : SnakeApp.getApp().snakes[i].getBody()) {
+			LinkedList<Cell> bodyCopy = new LinkedList<>(SnakeApp.getApp().snakes[i].getBody());
+			for (Cell p : bodyCopy) {
 				if (p.equals(SnakeApp.getApp().snakes[i].getBody().peekFirst())) {
 					g.setColor(new Color(050+(i*10), 205, 150));
 					g.fillRect(p.getX() * GridSize.WIDTH_BOX, p.getY()

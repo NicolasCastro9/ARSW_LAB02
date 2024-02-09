@@ -22,12 +22,13 @@ public class Snake extends Observable implements Runnable {
     private int direction = Direction.NO_DIRECTION;
     private final int INIT_SIZE = 3;
 
-    private boolean hasTurbo = false;
+    private boolean hasTurbo = true;
     private int jumps = 0;
     private boolean isSelected = false;
     private int growing = 0;
     public boolean goal = false;
-    private int deathTime = -1; 
+    private int deathTime = -1;
+    private final Object lock = new Object();
 
     public Snake(int idt, Cell head, int direction) {
         this.idt = idt;
@@ -49,25 +50,27 @@ public class Snake extends Observable implements Runnable {
 
     @Override
     public void run() {
-        while (!snakeEnd) {
-            
-            snakeCalc();
+        synchronized(this){
+            while (!snakeEnd) {
+                
+                snakeCalc();
 
-            //NOTIFY CHANGES TO GUI
-            setChanged();
-            notifyObservers();
+                //NOTIFY CHANGES TO GUI
+                setChanged();
+                notifyObservers();
 
-            try {
-                if (hasTurbo == true) {
-                    Thread.sleep(500 / 3);
-                } else {
-                    Thread.sleep(500);
+                try {
+                    if (hasTurbo == true) {
+                        wait(500 / 3);
+                    } else {
+                        wait(500);
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
 
-        }
+            }
+    }
         
         fixDirection(head);
         
@@ -75,28 +78,30 @@ public class Snake extends Observable implements Runnable {
     }
 
     private void snakeCalc() {
-        head = snakeBody.peekFirst();
+        synchronized(lock){
+            head = snakeBody.peekFirst();
 
-        newCell = head;
+            newCell = head;
 
-        newCell = changeDirection(newCell);
-        
-        randomMovement(newCell);
+            newCell = changeDirection(newCell);
+            
+            randomMovement(newCell);
 
-        checkIfFood(newCell);
-        checkIfJumpPad(newCell);
-        checkIfTurboBoost(newCell);
-        checkIfBarrier(newCell);
-        
-        snakeBody.push(newCell);
+            checkIfFood(newCell);
+            checkIfJumpPad(newCell);
+            checkIfTurboBoost(newCell);
+            checkIfBarrier(newCell);
+            
+            snakeBody.push(newCell);
 
-        if (growing <= 0) {
-            newCell = snakeBody.peekLast();
-            snakeBody.remove(snakeBody.peekLast());
-            Board.gameboard[newCell.getX()][newCell.getY()].freeCell();
-        } else if (growing != 0) {
-            growing--;
-        }
+            if (growing <= 0) {
+                newCell = snakeBody.peekLast();
+                snakeBody.remove(snakeBody.peekLast());
+                Board.gameboard[newCell.getX()][newCell.getY()].freeCell();
+            } else if (growing != 0) {
+                growing--;
+            }
+    }
 
     }
 
