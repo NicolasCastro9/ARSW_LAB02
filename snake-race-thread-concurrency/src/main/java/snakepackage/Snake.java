@@ -12,6 +12,7 @@ public class Snake extends Observable implements Runnable {
     private int idt;
     private Cell head;
     private Cell newCell;
+    private Cell deathcell;
     private LinkedList<Cell> snakeBody = new LinkedList<Cell>();
     //private Cell objective = null;
     private Cell start = null;
@@ -26,6 +27,7 @@ public class Snake extends Observable implements Runnable {
     private boolean isSelected = false;
     private int growing = 0;
     public boolean goal = false;
+    private int deathTime = -1; 
 
     public Snake(int idt, Cell head, int direction) {
         this.idt = idt;
@@ -343,4 +345,22 @@ public class Snake extends Observable implements Runnable {
         return idt;
     }
 
+    public boolean isAlive() {
+        return !snakeEnd;
+    }
+    public void die() {
+        snakeEnd = true;
+        deathTime = (int) System.currentTimeMillis();
+    }
+
+    public int getDeathTime() {
+        return deathTime;
+    }
+    public Cell getDeadCell() {
+        return deathcell;
+    }
+
+    public void setDeadCell(Cell cell) {
+        this.deathcell = cell;
+    }
 }
