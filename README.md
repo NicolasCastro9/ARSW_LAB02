@@ -3,7 +3,7 @@
 
 #### Taller – programación concurrente, condiciones de carrera y sincronización de hilos.
 
-##### Parte I – Antes de terminar la clase.
+#### Parte I – Antes de terminar la clase.
 
 Revisando el programa "primos concurrentes" localizado en la carpeta "wait-notify-excercise" y perteneciente al paquete edu.eci.arsw.primefinder, está diseñado para calcular los números primos dentro de un rango específico mediante la distribución de la búsqueda entre hilos independientes. 
 
