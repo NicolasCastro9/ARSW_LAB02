@@ -8,7 +8,9 @@ public class PrimeFinderThread extends Thread {
     int a, b;
 
     private List<Integer> primes;
+    // Objeto de bloqueo para sincronización
     private Object lock;
+    // Variable booleana para controlar el estado de pausa del hilo
     private boolean paused;
 
     public PrimeFinderThread(int a, int b, Object lock) {
@@ -23,6 +25,7 @@ public class PrimeFinderThread extends Thread {
     @Override
     public void run() {
         for (int i = a; i < b; i++) {
+            // Bloque sincronizado, si el hilo está pausado, espera hasta que se reanude
             synchronized (lock) {
                 if (paused) {
                     try {
@@ -55,11 +58,15 @@ public class PrimeFinderThread extends Thread {
     public List<Integer> getPrimes() {
         return primes;
     }
-
+    /**
+     * Metodo que pausa el hilo
+     */
     public void pauseThread() {
         paused = true;
     }
-
+    /**
+     * Metodo que reanuda el hilo
+     */
     public void resumeThread() {
         synchronized (lock) {
             paused = false;
