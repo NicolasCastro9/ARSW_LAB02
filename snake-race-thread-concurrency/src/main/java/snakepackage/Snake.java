@@ -22,7 +22,7 @@ public class Snake extends Observable implements Runnable {
     private int direction = Direction.NO_DIRECTION;
     private final int INIT_SIZE = 3;
 
-    private boolean hasTurbo = true;
+    private boolean hasTurbo = false;
     private int jumps = 0;
     private boolean isSelected = false;
     private int growing = 0;
@@ -61,9 +61,9 @@ public class Snake extends Observable implements Runnable {
 
                 try {
                     if (hasTurbo == true) {
-                        wait(500 / 3);
+                        wait(200 / 3);
                     } else {
-                        wait(500);
+                        wait(200);
                     }
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -110,7 +110,7 @@ public class Snake extends Observable implements Runnable {
             // crash
             System.out.println("[" + idt + "] " + "CRASHED AGAINST BARRIER "
                     + newCell.toString());
-            snakeEnd=true;
+            die();
         }
     }
 

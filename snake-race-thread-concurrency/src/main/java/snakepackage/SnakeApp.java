@@ -5,12 +5,15 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+
+import enums.Direction;
 import enums.GridSize;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.FlowLayout;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -49,6 +52,11 @@ public class SnakeApp {
     private JLabel worstSnakeLabel;
     private int longestSnakeLength = 0;
     private int worstSnakeLength = Integer.MAX_VALUE;
+    private final Object lock = new Object();
+    JButton inicioButton = new JButton("Iniciar");
+    JButton pausarButton = new JButton("Pausar");
+    JButton reanudarButton = new JButton("Reanudar");
+    JButton suspenderButton = new JButton("Suspender");
 
     public SnakeApp() {
         Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
@@ -61,10 +69,7 @@ public class SnakeApp {
         frame.setLocation(dimension.width / 2 - frame.getWidth() / 2,
                 dimension.height / 2 - frame.getHeight() / 2);
         JPanel controlPanel = new JPanel(new FlowLayout());
-        JButton inicioButton = new JButton("Iniciar");
-        JButton pausarButton = new JButton("Pausar");
-        JButton reanudarButton = new JButton("Reanudar");
-        JButton suspenderButton = new JButton("Suspender");
+        
         // Agregar acciones a los botones
         inicioButton.addActionListener(new ActionListener() {
             @Override
@@ -157,18 +162,30 @@ public class SnakeApp {
         
 
     }
+    /**
+     * Inicia el juego, creando nuevas serpientes y generando los elementos del tablero si el juego se reanuda.
+     * Si el juego se estaba reanudando, se muestra el panel de estadísticas y se inician las serpientes en las celdas de inicio.
+     * Si el juego se está iniciando por primera vez, se restablecen las variables de longitud de serpiente más larga y serpiente peor clasificada,
+     * y se generan aleatoriamente los elementos del tablero.
+     */
     private void startGame() {
         if (gameSuspended) {
             gameSuspended = false;
             statsPanel.setVisible(true);
-            for (int i = 0; i < MAX_THREADS; i++) {
-                thread[i].resume();
-            }
         } else {
+            // Si el juego se está iniciando por primera vez
+            // Restablece las variables de longitud de serpiente más larga y serpiente peor clasificada
             longestSnakeLength = 0;
             worstSnakeLength = Integer.MAX_VALUE;
             longestSnakeLabel.setText("Serpiente más larga: ");
             worstSnakeLabel.setText("Peor serpiente: ");
+            // Vuelve a generar aleatoriamente los elementos del tablero
+            board.GenerateBoard();
+            board.GenerateFood();
+            board.GenerateBarriers();
+            board.GenerateJumpPads();
+            board.GenerateTurboBoosts();
+            // Inicia cada serpiente en la celda de inicio y la dirección inicial
             for (int i = 0; i != MAX_THREADS; i++) {
                 snakes[i] = new Snake(i + 1, spawn[i], i + 1);
                 snakes[i].addObserver(board);
@@ -176,6 +193,11 @@ public class SnakeApp {
                 thread[i].start();
             }
         }
+        // Vuelve a pintar el tablero
+        frame.getContentPane().getComponent(0).repaint();
+        pausarButton.setEnabled(true);
+        reanudarButton.setEnabled(true);
+        suspenderButton.setEnabled(true);
         gamePaused = false;
     }
 
@@ -183,34 +205,51 @@ public class SnakeApp {
     public static SnakeApp getApp() {
         return app;
     }
+
+    /**
+     * Pausa el juego deteniendo la ejecución de los hilos de juego.
+     * Muestra las estadísticas del juego cuando se pausa.
+     */
     private void pauseGame() {
         if (!gamePaused) {
             gamePaused = true;
             for (int i = 0; i < MAX_THREADS; i++) {
-                thread[i].suspend();
+                synchronized (lock) {
+                    thread[i].suspend();
+                }
             }
             showGameStats();
         }
     }
-
+    /**
+     * Reanuda el juego, permitiendo que los hilos de juego continúen su ejecución.
+     * Solo se ejecuta si el juego está pausado.
+     */
     private void resumeGame() {
         if (gamePaused) {
             gamePaused = false;
             for (int i = 0; i < MAX_THREADS; i++) {
-                thread[i].resume();
+                synchronized (lock) {
+                    thread[i].resume();
+                }
             }
         }
     }
 
+
     private void suspendGame() {
         gameSuspended = true;
-        statsPanel.setVisible(true);
-        for (int i = 0; i < MAX_THREADS; i++) {
-            thread[i].suspend();
-        }
-    showGameStats();
+        pauseGame();
+        pausarButton.setEnabled(false);
+        reanudarButton.setEnabled(false);
+        suspenderButton.setEnabled(false);
+        showGameStats();
     }
 
+    /**
+     * Actualiza la visualización de las estadísticas del juego.
+     * Muestra la serpiente más larga que sigue viva y la primera serpiente que se ha chocado.
+     */
     private void showGameStats() {
         List<Snake> aliveSnakes = new ArrayList<>();
         for (int i = 0; i < MAX_THREADS; i++) {
@@ -218,20 +257,27 @@ public class SnakeApp {
                 aliveSnakes.add(snakes[i]);
             }
         }
+        // Actualiza la etiqueta de la serpiente más larga con su información
         if (!aliveSnakes.isEmpty()) {
             Snake longestSnake = Collections.max(aliveSnakes, (s1, s2) -> Integer.compare(s1.getBody().size(), s2.getBody().size()));
-            longestSnakeLabel.setText("Serpiente más larga: " + longestSnake.getBody().size());
+            longestSnakeLabel.setText("Serpiente más larga:"  + " [" + longestSnake.getIdt() + "]" + " tamaño " + longestSnake.getBody().size() + "/");
             if (longestSnake.getBody().size() > longestSnakeLength) {
                 longestSnakeLength = longestSnake.getBody().size();
             }
-    
-            Snake worstSnake = Collections.min(aliveSnakes, (s1, s2) -> Integer.compare(s1.getDeathTime(), s2.getDeathTime()));
-            worstSnakeLabel.setText("Peor serpiente: " + worstSnake.getIdt() + " (muerta en " + worstSnake.getDeathTime() + " movimientos)");
-            if (worstSnake.getDeathTime() < worstSnakeLength) {
-                worstSnakeLength = worstSnake.getDeathTime();
+
+        }
+        // Busca la primera serpiente que se haya chocado
+        Snake firstCrashedSnake = null;
+        for (int i = 0; i < MAX_THREADS; i++) {
+            if (!snakes[i].isAlive()) {
+                firstCrashedSnake = snakes[i];
+                break;
             }
         }
+        if (firstCrashedSnake != null) {
+            worstSnakeLabel.setText("Primera serpiente chocada: " + firstCrashedSnake.getIdt());
+        }
+
     }
     
-
 }

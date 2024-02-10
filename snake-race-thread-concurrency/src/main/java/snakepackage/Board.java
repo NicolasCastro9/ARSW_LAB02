@@ -19,10 +19,10 @@ import java.io.InputStream;
 public class Board extends JLabel implements Observer {
 
 	private static final long serialVersionUID = 1L;
-	public static final int NR_BARRIERS = 5;
-	public static final int NR_JUMP_PADS = 2;
-	public static final int NR_TURBO_BOOSTS = 2;
-	public static final int NR_FOOD = 10;
+	public static final int NR_BARRIERS = 6;
+	public static final int NR_JUMP_PADS = 5;
+	public static final int NR_TURBO_BOOSTS = 6;
+	public static final int NR_FOOD = 12;
 	static Cell[] food = new Cell[NR_FOOD];
 	static Cell[] barriers = new Cell[NR_BARRIERS];
 	static Cell[] jump_pads = new Cell[NR_JUMP_PADS];
@@ -46,7 +46,7 @@ public class Board extends JLabel implements Observer {
 		GenerateTurboBoosts();
 	}
 
-	private void GenerateTurboBoosts() {
+	public void GenerateTurboBoosts() {
 		synchronized(lock){
 			for (int i = 0; i != NR_TURBO_BOOSTS; i++) {
 				Cell tmp = gameboard[random.nextInt(GridSize.GRID_WIDTH)][random
@@ -61,7 +61,7 @@ public class Board extends JLabel implements Observer {
 		}
 	}
 
-	private void GenerateJumpPads() {
+	public void GenerateJumpPads() {
 		synchronized(lock){
 			for (int i = 0; i != NR_JUMP_PADS; i++) {
 				Cell tmp = gameboard[random.nextInt(GridSize.GRID_WIDTH)][random
@@ -76,7 +76,7 @@ public class Board extends JLabel implements Observer {
 		}
 	}
 
-	private void GenerateBoard() {
+	public void GenerateBoard() {
 		synchronized(lock){
 			for (int i = 0; i != GridSize.GRID_WIDTH; i++) {
 				for (int j = 0; j != GridSize.GRID_HEIGHT; j++) {
@@ -88,7 +88,7 @@ public class Board extends JLabel implements Observer {
 
 	}
 
-	private void GenerateBarriers() {
+	public void GenerateBarriers() {
 		synchronized(lock){
 			for (int i = 0; i != NR_BARRIERS; i++) {
 				Cell tmp = gameboard[random.nextInt(GridSize.GRID_WIDTH)][random
@@ -103,7 +103,7 @@ public class Board extends JLabel implements Observer {
 		}
 	}
 
-	private void GenerateFood() {
+	public void GenerateFood() {
 		synchronized(lock){
 			for (int i = 0; i != NR_FOOD; i++) {
 				Cell tmp = gameboard[random.nextInt(GridSize.GRID_WIDTH)][random
